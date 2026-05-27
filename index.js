@@ -79,19 +79,20 @@ async function agent(query) {
     })
 
     /**
-     * 1. Split the string on the newline character ("\n")
-     * 2. Search through the array of strings for one that has "Action:"
-     *      regex to use: 
-     *      const actionRegex = /^Action: (\w+): (.*)$/
-     * 3. Parse the action (function and parameter) from the string
+     * CHALLENGE:
+     * 4. Calling the function
+     * 5. Add an "Obversation" message with the results of the function call
      */
     const responseText = response.choices[0].message.content
     const responseLines = responseText.split("\n")
+    console.log(responseLines)
     
     const actionRegex = /^Action: (\w+): (.*)$/
     const foundActionStr = responseLines.find(str => actionRegex.test(str))
-    const actions = actionRegex.exec(foundActionStr)
-    console.log(actions)
+    const actions = actionRegex["exec"](foundActionStr)
+    const [_, action, actionArg] = actions
+    const observation = await availableFunctions[action](actionArg)
+    console.log(observation)
 }
 
 agent("Where am I located?")
