@@ -14,8 +14,8 @@ export const openai = new OpenAI({
 })
 
 const availableFunctions = {
-    "getCurrentWeather": getCurrentWeather,
-    "getLocation": getLocation
+    getCurrentWeather,
+    getLocation
 }
 
 /**
@@ -70,29 +70,39 @@ Answer: <Suggested activities based on sunny weather that are highly specific to
 
 async function agent(query) {
     
+    const messages = [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: query }
+    ]
     const response = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
-        messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: query }
-        ]
+        messages
     })
 
-    /**
-     * CHALLENGE:
-     * 4. Calling the function
-     * 5. Add an "Obversation" message with the results of the function call
-     */
     const responseText = response.choices[0].message.content
+
+    // Push first response from AI
+    messages.push({ role: "assistant", content: responseText })
+
     const responseLines = responseText.split("\n")
     console.log(responseLines)
-    
+
     const actionRegex = /^Action: (\w+): (.*)$/
     const foundActionStr = responseLines.find(str => actionRegex.test(str))
-    const actions = actionRegex["exec"](foundActionStr)
-    const [_, action, actionArg] = actions
-    const observation = await availableFunctions[action](actionArg)
-    console.log(observation)
+    
+    // Check if action is found in response
+    if (foundActionStr) {
+        const actions = actionRegex["exec"](foundActionStr)
+        const [_, action, actionArg] = actions
+        
+        // Check if action is defined
+        if (!availableFunctions.hasOwnProperty(action)) {
+            throw new Error(`Unknown action: ${action}: ${actionArg}`)
+        }
+        
+        const observation = await availableFunctions[action](actionArg)
+        message.push({ role: "assistant", content: `Observation: ${observation}` })
+    }
 }
 
 agent("Where am I located?")
