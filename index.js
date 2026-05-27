@@ -22,15 +22,6 @@ const availableFunctions = {
  * Goal - build an agent that can answer any questions that might require knowledge about my current location and the current weather at my location.
  */
 
-/**
- PLAN:
- 1. Design a well-written ReAct prompt
- 2. Build a loop for my agent to run in.
- 3. Parse any actions that the LLM determines are necessary
- 4. End condition - final Answer is given
- 
- */
-
 const systemPrompt = `
 You cycle through Thought, Action, PAUSE, Observation. At the end of the loop you output a final Answer. Your final answer should be highly specific to the observations you have from running
 the actions.
@@ -69,40 +60,44 @@ Answer: <Suggested activities based on sunny weather that are highly specific to
 `
 
 async function agent(query) {
-    
     const messages = [
         { role: "system", content: systemPrompt },
         { role: "user", content: query }
     ]
-    const response = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
-        messages
-    })
-
-    const responseText = response.choices[0].message.content
-
-    // Push first response from AI
-    messages.push({ role: "assistant", content: responseText })
-
-    const responseLines = responseText.split("\n")
-    console.log(responseLines)
-
-    const actionRegex = /^Action: (\w+): (.*)$/
-    const foundActionStr = responseLines.find(str => actionRegex.test(str))
     
-    // Check if action is found in response
-    if (foundActionStr) {
-        const actions = actionRegex["exec"](foundActionStr)
-        const [_, action, actionArg] = actions
+    const MAX_ITERATIONS = 5
+    const actionRegex = /^Action: (\w+): (.*)$/
+    
+    for (let i = 0; i < MAX_ITERATIONS; i++) {
+        console.log(`Iteration #${i + 1}`)
+        const response = await openai.chat.completions.create({
+            model: "gpt-3.5-turbo",
+            messages
+        })
+
+        const responseText = response.choices[0].message.content
+        console.log(responseText)
+        messages.push({ role: "assistant", content: responseText })
+        const responseLines = responseText.split("\n")
+
+        const foundActionStr = responseLines.find(str => actionRegex.test(str))
         
-        // Check if action is defined
-        if (!availableFunctions.hasOwnProperty(action)) {
-            throw new Error(`Unknown action: ${action}: ${actionArg}`)
+        if (foundActionStr) {
+            const actions = actionRegex["exec"](foundActionStr)
+            const [_, action, actionArg] = actions
+            
+            if (!availableFunctions.hasOwnProperty(action)) {
+                throw new Error(`Unknown action: ${action}: ${actionArg}`)
+            }
+            console.log(`Calling function ${action} with argument ${actionArg}`)
+            const observation = await availableFunctions[action](actionArg)
+            messages.push({ role: "assistant", content: `Observation: ${observation}` })
+        } else {
+            console.log("Agent finished with task")
+            return responseText
         }
-        
-        const observation = await availableFunctions[action](actionArg)
-        message.push({ role: "assistant", content: `Observation: ${observation}` })
     }
+    
 }
 
-agent("Where am I located?")
+console.log(await agent("What are some activity ideas that I can do this afternoon based on my location and weather?"))
