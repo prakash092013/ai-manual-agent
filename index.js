@@ -73,7 +73,20 @@ async function agent(query) {
         ]
     })
 
-    console.log(JSON.stringify(response.choices[0].message.content))
+    /**
+     * 1. Split the string on the newline character ("\n")
+     * 2. Search through the array of strings for one that has "Action:"
+     *      regex to use: 
+     *      const actionRegex = /^Action: (\w+): (.*)$/
+     * 3. Parse the action (function and parameter) from the string
+     */
+    const responseText = response.choices[0].message.content
+    const responseLines = responseText.split("\n")
+    
+    const actionRegex = /^Action: (\w+): (.*)$/
+    const foundActionStr = responseLines.find(str => actionRegex.test(str))
+    const actions = actionRegex.exec(foundActionStr)
+    console.log(actions)
 }
 
 agent("What book should I read next? I like self-help books.")
