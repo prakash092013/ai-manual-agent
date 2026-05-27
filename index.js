@@ -63,17 +63,17 @@ You then output:
 Answer: <Suggested activities based on sunny weather that are highly specific to New York City and surrounding areas.>
 `
 
-// const weather = await getCurrentWeather()
-// const location = await getLocation()
+async function agent(query) {
+    
+    const response = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: query }
+        ]
+    })
 
-// const response = await openai.chat.completions.create({
-//     model: "gpt-3.5-turbo",
-//     messages: [
-//         {
-//             role: "user",
-//             content: `Give me a list of activity ideas based on my current location of ${location} and weather of ${weather}`
-//         }
-//     ]
-// })
+    console.log(JSON.stringify(response.choices[0].message.content))
+}
 
-// console.log(response.choices[0].message.content)
+agent("What book should I read next? I like self-help books.")
