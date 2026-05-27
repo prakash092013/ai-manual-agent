@@ -13,6 +13,11 @@ export const openai = new OpenAI({
     dangerouslyAllowBrowser: true
 })
 
+const availableFunctions = {
+    "getCurrentWeather": getCurrentWeather,
+    "getLocation": getLocation
+}
+
 /**
  * Goal - build an agent that can answer any questions that might require knowledge about my current location and the current weather at my location.
  */
@@ -89,4 +94,4 @@ async function agent(query) {
     console.log(actions)
 }
 
-agent("What book should I read next? I like self-help books.")
+agent("Where am I located?")
